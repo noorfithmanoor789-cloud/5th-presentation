@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — Presentation Master Academy</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+<header>
+    <div class="header-container">
+        <div class="logo-container">
+            <img src="./logo.jpg" alt="Presentation Master Academy" class="logo-img">
+            <div class="logo-text">
+                <h1>PRESENTATION MASTER ACADEMY</h1>
+                <p>Admin Dashboard</p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav id="mainNav"></nav>
+
+<!-- Admin Gate -->
+<div id="gate" class="admin-gate">
+    <h2 style="color: var(--primary); margin-bottom: 1rem;">Admin Access</h2>
+    <p style="color:#666; margin-bottom: 1.5rem;">Enter admin password to continue.</p>
+    <div class="form-group">
+        <input type="password" id="adminPass" placeholder="Admin password">
+    </div>
+    <button id="gateBtn" class="cta-button" style="border:none; cursor:pointer;">Enter</button>
+    <div id="gateMessage" class="message"></div>
+</div>
+
+<!-- Admin Dashboard -->
+<section id="adminPanel" style="display:none;">
+    <div class="section-container">
+        <div class="section-title">
+            <h2 class="fade-in">Pending Applications</h2>
+            <p style="color:#555; margin-top:1rem;">Review and approve student applications. Approved students automatically receive login credentials via email.</p>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <strong>Total Pending:</strong> <span id="pendingCount" class="badge-pending">0</span>
+                &nbsp;&nbsp;
+                <strong>Total Approved:</strong> <span id="approvedCount" class="badge-approved">0</span>
+            </div>
+            <button id="refreshBtn" class="show-more" style="border:none; cursor:pointer;">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+        </div>
+
+        <table class="app-table">
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Email</th>
+                    <th>Program</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="appTableBody">
+                <tr><td colspan="6" class="empty-row">Loading applications...</td></tr>
+            </tbody>
+        </table>
+
+        <div id="adminMessage" class="message" style="margin-top:1.5rem;"></div>
+    </div>
+</section>
+
+<footer>
+    <div class="footer-container">
+        <div class="footer-section">
+            <h3 class="fade-in">Contact Information</h3>
+            <div class="contact-info">
+                <p class="fade-in2"><i class="fas fa-map-marker-alt"></i> Presentation Master Academy, Nawabshah</p>
+                <p class="fade-in2"><i class="fas fa-phone"></i> 03234296569</p>
+                <p class="fade-in2"><i class="fas fa-envelope"></i> info@presentationmasteracademy.edu.pk</p>
+            </div>
+        </div>
+    </div>
+    <div class="copyright">
+        <p>&copy; 2026 Presentation Master Academy. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="./nav.js"></script>
+
+<script type="module">
+    import {
+        db, auth, createUserWithEmailAndPassword, usernameToEmail,
+        doc, setDoc, updateDoc, collection, getDocs,
+        serverTimestamp, setMessage, generatePassword, generateUsername,
+        sendApprovalEmail, ADMIN_PASSWORD, EMAILJS_PUBLIC_KEY, formatDate
+    } from "./firebase.js";
+
+    if (typeof emailjs !== "undefined" && !EMAILJS_PUBLIC_KEY.startsWith("YOUR_")) {
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+    }
+
+    const gate = document.getElementById("gate");
+    const adminPanel = document.getElementById("adminPanel");
+    const adminMessage = "#adminMessage";
+
+    document.getElementById("gateBtn").addEventListener("click", () => {
+        const pass = document.getElementById("adminPass").value;
+        if (pass === ADMIN_PASSWORD) {
+            gate.style.display = "none";
+            adminPanel.style.display = "block";
+            loadApplications();
+        } else {
+            setMessage("#gateMessage", "❌ Incorrect password.", "error");
+        }
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", loadApplications);
+
+    async function loadApplications() {
+        const tbody = document.getElementById("appTableBody");
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Loading applications...</td></tr>`;
+
+        try {
+            const snap = await getDocs(collection(db, "applications"));
+            const rows = [];
+            let pending = 0;
+            let approved = 0;
+
+            snap.forEach(d => {
+                const a = d.data();
+                if (a.status === "pending") pending++;
+                if (a.status === "approved") approved++;
+                rows.push({ id: d.id, ...a });
+            });
+
+            rows.sort((x, y) => {
+                if (x.status === "pending" && y.status !== "pending") return -1;
+                if (x.status !== "pending" && y.status === "pending") return 1;
+                const tx = x.createdAt?.toDate ? x.createdAt.toDate().getTime() : 0;
+                const ty = y.createdAt?.toDate ? y.createdAt.toDate().getTime() : 0;
+                return ty - tx;
+            });
+
+            document.getElementById("pendingCount").textContent = pending;
+            document.getElementById("approvedCount").textContent = approved;
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-row">No applications yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(r => {
+                const badgeClass = r.status === "pending" ? "badge-pending" : r.status === "approved" ? "badge-approved" : "badge-rejected";
+                const actions = r.status === "pending"
+                    ? `<button class="btn-approve" data-action="approve" data-id="${r.id}">Approve</button>
+                       <button class="btn-reject" data-action="reject" data-id="${r.id}">Reject</button>`
+                    : r.status === "approved"
+                        ? `<span style="color:#4cd137; font-weight:600;">Credentials sent</span>`
+                        : `<span style="color:#e74c3c; font-weight:600;">Rejected</span>`;
+                return `
+                    <tr>
+                        <td>${escapeHtml(r.fullName || "-")}</td>
+                        <td>${escapeHtml(r.email || "-")}</td>
+                        <td>${escapeHtml(r.program || "-")}</td>
+                        <td>${formatDate(r.createdAt)}</td>
+                        <td><span class="${badgeClass}">${r.status || "pending"}</span></td>
+                        <td>${actions}</td>
+                    </tr>
+                `;
+            }).join("");
+
+            tbody.querySelectorAll("button[data-action]").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const id = btn.dataset.id;
+                    const action = btn.dataset.action;
+                    const app = rows.find(x => x.id === id);
+                    if (!app) return;
+                    if (action === "approve") approveApplication(id, app);
+                    else rejectApplication(id, app);
+                });
+            });
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Error: ${escapeHtml(err.message)}</td></tr>`;
+        }
+    }
+
+    async function approveApplication(appId, appData) {
+        if (!confirm(`Approve ${appData.fullName}? Credentials will be generated and emailed.`)) return;
+
+        try {
+            const username = generateUsername("PMA");
+            const password = generatePassword();
+            const email = usernameToEmail(username);
+
+            const cred = await createUserWithEmailAndPassword(auth, email, password);
+            const uid = cred.user.uid;
+
+            await setDoc(doc(db, "students", uid), {
+                uid,
+                username,
+                email,
+                passwordPlain: password,
+                fullName: appData.fullName || "",
+                fatherName: appData.fatherName || "",
+                contactEmail: appData.email || "",
+                phone: appData.phone || "",
+                qualification: appData.qualification || "",
+                city: appData.city || "",
+                program: appData.program || "",
+                applicationId: appData.applicationId || "",
+                status: "approved",
+                approvedAt: serverTimestamp(),
+                createdAt: appData.createdAt || serverTimestamp()
+            });
+
+            await updateDoc(doc(db, "applications", appId), {
+                status: "approved",
+                username,
+                approvedAt: serverTimestamp()
+            });
+
+            let emailStatus = "sent";
+            try {
+                const res = await sendApprovalEmail(appData.email, appData.fullName, username, password);
+                if (res && res.skipped) emailStatus = "skipped (EmailJS not configured)";
+            } catch (emailErr) {
+                console.warn("Email send failed:", emailErr);
+                emailStatus = "failed: " + emailErr.message;
+            }
+
+            setMessage(adminMessage,
+                `✅ Approved ${appData.fullName}. Username: ${username} | Password: ${password} | Email: ${emailStatus}`,
+                "ok");
+            loadApplications();
+        } catch (err) {
+            console.error(err);
+            setMessage(adminMessage, "❌ Approval error: " + err.message, "error");
+        }
+    }
+
+    async function rejectApplication(appId, appData) {
+        if (!confirm(`Reject ${appData.fullName}'s application?`)) return;
+        try {
+            await updateDoc(doc(db, "applications", appId), {
+                status: "rejected",
+                rejectedAt: serverTimestamp()
+            });
+            setMessage(adminMessage, `✅ Rejected ${appData.fullName}.`, "ok");
+            loadApplications();
+        } catch (err) {
+            console.error(err);
+            setMessage(adminMessage, "❌ Reject error: " + err.message, "error");
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, c => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[c]));
+    }
+</script>
+</body>
+</html>

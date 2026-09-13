@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal — Presentation Master Academy</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header>
+    <div class="header-container">
+        <div class="logo-container">
+            <img src="./logo.jpg" alt="Presentation Master Academy" class="logo-img">
+            <div class="logo-text">
+                <h1>PRESENTATION MASTER ACADEMY</h1>
+                <p>Student Portal</p>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <div style="text-align:right; color:white;">
+                <div style="font-weight:700;">Welcome, <span id="studentName">Student</span></div>
+                <div style="font-size:0.85rem; opacity:0.85;">ID: <span id="studentId">—</span></div>
+            </div>
+            <button id="logoutBtn" class="cta-button" style="border:none; cursor:pointer;">Logout</button>
+        </div>
+    </div>
+</header>
+
+<nav id="mainNav"></nav>
+
+<section>
+    <div class="section-container">
+        <div class="section-title">
+            <h2 class="fade-in">Your Learning Hub</h2>
+            <p style="color:#555; margin-top:1rem;">Access all your study materials, tests, and academy resources in one place.</p>
+        </div>
+
+        <div class="portal-grid">
+            <button class="portal-card" data-portal="notes">
+                <i class="fas fa-book"></i>
+                <h3>Notes</h3>
+                <p>Study material</p>
+            </button>
+
+            <button class="portal-card" data-portal="videos">
+                <i class="fas fa-video"></i>
+                <h3>Video Lectures</h3>
+                <p>Watch & learn</p>
+            </button>
+
+            <button class="portal-card" data-portal="results">
+                <i class="fas fa-chart-bar"></i>
+                <h3>Test Results</h3>
+                <p>Your performance</p>
+            </button>
+
+            <button class="portal-card" data-portal="tests">
+                <i class="fas fa-pen-to-square"></i>
+                <h3>Online Tests</h3>
+                <p>Take a test</p>
+            </button>
+
+            <button class="portal-card" data-portal="ppts">
+                <i class="fas fa-file-powerpoint"></i>
+                <h3>PPTs</h3>
+                <p>Presentations</p>
+            </button>
+
+            <button class="portal-card" data-portal="queries">
+                <i class="fas fa-question-circle"></i>
+                <h3>Questions / Queries</h3>
+                <p>Ask your teacher</p>
+            </button>
+
+            <button class="portal-card" data-portal="counseling">
+                <i class="fas fa-graduation-cap"></i>
+                <h3>Academic Counseling</h3>
+                <p>Get guidance</p>
+            </button>
+
+            <button class="portal-card" data-portal="position">
+                <i class="fas fa-trophy"></i>
+                <h3>Position Holders</h3>
+                <p>See top students</p>
+            </button>
+
+            <button class="portal-card" data-portal="announcements">
+                <i class="fas fa-bullhorn"></i>
+                <h3>Announcements</h3>
+                <p>Latest updates</p>
+            </button>
+
+            <button class="portal-card" data-portal="profile">
+                <i class="fas fa-user"></i>
+                <h3>Student Profile</h3>
+                <p>Your details</p>
+            </button>
+        </div>
+
+        <div style="text-align:center; margin-top:3rem;">
+            <a id="examPortalBtn" class="cta-button" href="#" target="_blank" rel="noopener">Take Test — Open Exam Portal</a>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="footer-container">
+        <div class="footer-section">
+            <h3 class="fade-in">Contact Information</h3>
+            <div class="contact-info">
+                <p class="fade-in2"><i class="fas fa-map-marker-alt"></i> Presentation Master Academy, Nawabshah</p>
+                <p class="fade-in2"><i class="fas fa-phone"></i> 03234296569</p>
+                <p class="fade-in2"><i class="fas fa-envelope"></i> info@presentationmasteracademy.edu.pk</p>
+            </div>
+        </div>
+    </div>
+    <div class="copyright">
+        <p>&copy; 2026 Presentation Master Academy. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="./nav.js"></script>
+
+<script type="module">
+    import {
+        auth, db, onAuthStateChanged, signOut, doc, getDoc, EXAM_PORTAL_URL
+    } from "./firebase.js";
+
+    document.getElementById("examPortalBtn").href = EXAM_PORTAL_URL;
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) { window.location.href = "./login.html"; return; }
+
+        try {
+            const snap = await getDoc(doc(db, "students", user.uid));
+            if (snap.exists()) {
+                const s = snap.data();
+                document.getElementById("studentName").textContent = s.fullName || "Student";
+                document.getElementById("studentId").textContent = s.username || "";
+            } else {
+                document.getElementById("studentName").textContent = user.email;
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+        try {
+            await signOut(auth);
+            localStorage.removeItem("pma_student");
+            window.location.href = "./login.html";
+        } catch (err) {
+            alert("Logout failed: " + err.message);
+        }
+    });
+
+    document.querySelectorAll(".portal-card").forEach(card => {
+        card.addEventListener("click", () => {
+            const key = card.dataset.portal;
+            alert("Coming soon: " + key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase()));
+        });
+    });
+</script>
+</body>
+</html>

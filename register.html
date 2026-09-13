@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply Now — Presentation Master Academy</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header>
+    <div class="header-container">
+        <div class="logo-container">
+            <img src="./logo.jpg" alt="Presentation Master Academy" class="logo-img">
+            <div class="logo-text">
+                <h1>PRESENTATION MASTER ACADEMY</h1>
+                <p>Excellence in Testing & Student Assessment</p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav id="mainNav"></nav>
+
+<section>
+    <div class="section-container">
+        <div class="section-title">
+            <h2 class="fade-in">Student Application Form</h2>
+            <p style="color: #555; font-size: 1.1rem; margin-top: 1rem;" class="fade-in">
+                Fill in your details to apply. After admin approval, you will receive your login credentials via email.
+            </p>
+        </div>
+
+        <div class="form-container zoom-in">
+            <form id="applicationForm" novalidate>
+                <div class="form-group">
+                    <label for="fullName">Full Name *</label>
+                    <input type="text" id="fullName" name="fullName" required placeholder="Enter your full name">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fatherName">Father Name *</label>
+                        <input type="text" id="fatherName" name="fatherName" required placeholder="Father's name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required placeholder="you@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" required placeholder="03XXXXXXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label for="city">City *</label>
+                        <input type="text" id="city" name="city" required placeholder="Your city">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="qualification">Qualification *</label>
+                    <input type="text" id="qualification" name="qualification" required placeholder="e.g. Intermediate, Bachelor's">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="program">Test / Program *</label>
+                        <select id="program" name="program" required>
+                            <option value="">-- Select --</option>
+                            <option value="Academic Test Preparation">Academic Test Preparation</option>
+                            <option value="Competitive Test Preparation">Competitive Test Preparation</option>
+                            <option value="Online Testing Program">Online Testing Program</option>
+                            <option value="Workshop & Training">Workshop & Training</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="preferredDate">Preferred Test Date</label>
+                        <input type="date" id="preferredDate" name="preferredDate">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Additional Notes (optional)</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="Anything we should know?"></textarea>
+                </div>
+
+                <button type="submit" class="cta-button" id="submitBtn" style="width:100%; border:none; cursor:pointer;">
+                    Submit Application
+                </button>
+
+                <div id="formMessage" class="message"></div>
+
+                <p style="text-align: center; margin-top: 1.5rem; color: #666;">
+                    Already registered?
+                    <a href="./login.html" style="color: var(--primary); font-weight: 600;">Student Login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="footer-container">
+        <div class="footer-section">
+            <h3 class="fade-in">Contact Information</h3>
+            <div class="contact-info">
+                <p class="fade-in2"><i class="fas fa-map-marker-alt"></i> Presentation Master Academy, Nawabshah</p>
+                <p class="fade-in2"><i class="fas fa-phone"></i> 03234296569</p>
+                <p class="fade-in2"><i class="fas fa-envelope"></i> info@presentationmasteracademy.edu.pk</p>
+            </div>
+        </div>
+    </div>
+    <div class="copyright">
+        <p>&copy; 2026 Presentation Master Academy. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="./nav.js"></script>
+
+<script type="module">
+    import { db, addDoc, collection, serverTimestamp, setMessage } from "./firebase.js";
+
+    const form = document.getElementById("applicationForm");
+    const btn  = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const data = {
+            fullName: document.getElementById("fullName").value.trim(),
+            fatherName: document.getElementById("fatherName").value.trim(),
+            email: document.getElementById("email").value.trim().toLowerCase(),
+            phone: document.getElementById("phone").value.trim(),
+            qualification: document.getElementById("qualification").value.trim(),
+            city: document.getElementById("city").value.trim(),
+            program: document.getElementById("program").value,
+            preferredDate: document.getElementById("preferredDate").value || null,
+            notes: document.getElementById("notes").value.trim(),
+            status: "pending",
+            createdAt: serverTimestamp(),
+            applicationId: "PMA-" + new Date().getFullYear() + "-" + Math.floor(1000 + Math.random() * 9000)
+        };
+
+        if (!data.fullName || !data.fatherName || !data.email || !data.phone || !data.qualification || !data.city || !data.program) {
+            setMessage("#formMessage", "❌ Please fill all required fields.", "error");
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+            setMessage("#formMessage", "❌ Please enter a valid email address.", "error");
+            return;
+        }
+
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = "Submitting...";
+
+        try {
+            await addDoc(collection(db, "applications"), data);
+            setMessage("#formMessage",
+                "✅ Application submitted successfully! Await admin approval. You will receive credentials by email.",
+                "ok");
+            form.reset();
+        } catch (err) {
+            console.error("Firestore error:", err);
+            setMessage("#formMessage",
+                "❌ Error: " + (err.message || "Could not submit. Please try again."),
+                "error");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+</script>
+</body>
+</html>
