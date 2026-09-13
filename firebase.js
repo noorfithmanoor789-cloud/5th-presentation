@@ -25,7 +25,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyAb2WQTeNmDnjDbK-Ggjt4LuZhUZwSu-tQ",
+  apiKey: "AIzaSyAb2WQTeNmDnjDbK-GgjT4LuZhUZwSu-tQ",
   authDomain: "presentation-master-acad-83fbc.firebaseapp.com",
   projectId: "presentation-master-acad-83fbc",
   storageBucket: "presentation-master-acad-83fbc.firebasestorage.app",
