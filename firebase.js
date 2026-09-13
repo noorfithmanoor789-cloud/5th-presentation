@@ -61,7 +61,7 @@ export const ACADEMY_PHONE = "03234296569";
 export const WHATSAPP_PHONE = "923234296569";
 export const EXAM_PORTAL_URL = "https://presentation-master-academy.vercel.app/";
 export const USERNAME_DOMAIN = "pma.local";
-export const ADMIN_PASSWORD = "PMA-ADMIN-2026"; // change in production
+export const ADMIN_PASSWORD = "PMA-ADMIN-2026";
 
 export function usernameToEmail(username) {
   return `${String(username).trim().toLowerCase()}@${USERNAME_DOMAIN}`;
@@ -111,16 +111,11 @@ export const EMAILJS_PUBLIC_KEY = "5lJnrq_hPXeobIy5K";
 export const EMAILJS_SERVICE_ID = "service_4v09ood";
 export const EMAILJS_TEMPLATE_ID = "t2ptc48";
 
-/**
- * Send approval email with proper error handling.
- * Returns { ok: true, response } on success
- *         { ok: false, error: "reason", detail } on failure
- */
 export async function sendApprovalEmail(toEmail, studentName, username, password) {
   // Check 1: EmailJS library loaded
   if (typeof emailjs === "undefined") {
     console.error("❌ EmailJS SDK not loaded. Add script tag in <head> of admin.html");
-    return { ok: false, error: "EmailJS SDK not loaded", detail: "Missing <script src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js'></script>" };
+    return { ok: false, error: "EmailJS SDK not loaded" };
   }
 
   // Check 2: Keys configured
@@ -130,16 +125,16 @@ export async function sendApprovalEmail(toEmail, studentName, username, password
     EMAILJS_TEMPLATE_ID.startsWith("YOUR_")
   ) {
     console.error("❌ EmailJS keys not configured");
-    return { ok: false, error: "EmailJS keys not configured", detail: "Fill EMAILJS_* in firebase.js" };
+    return { ok: false, error: "EmailJS keys not configured" };
   }
 
   // Check 3: Recipient email
   if (!toEmail || !toEmail.includes("@")) {
     console.error("❌ Invalid recipient email:", toEmail);
-    return { ok: false, error: "Invalid recipient email", detail: toEmail };
+    return { ok: false, error: "Invalid recipient email: " + toEmail };
   }
 
-  // Try init (safe — won't error if already initialized)
+  // Safe init
   try {
     if (typeof emailjs.init === "function") {
       emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
@@ -148,7 +143,11 @@ export async function sendApprovalEmail(toEmail, studentName, username, password
     console.warn("emailjs.init warning:", e);
   }
 
+  // Send
   try {
+    console.log("📧 Attempting to send email to:", toEmail);
+    console.log("📧 Using template:", EMAILJS_TEMPLATE_ID, "| service:", EMAILJS_SERVICE_ID);
+
     const response = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email: toEmail,
       student_name: studentName || "Student",
@@ -157,10 +156,10 @@ export async function sendApprovalEmail(toEmail, studentName, username, password
       login_url: window.location.origin + "/login.html",
       academy_name: "Presentation Master Academy"
     });
+
     console.log("✅ Email sent successfully:", response);
     return { ok: true, response };
   } catch (err) {
-    // EmailJS errors often come as { status, text }
     const realMessage =
       (err && (err.text || err.message)) ||
       (typeof err === "string" ? err : null) ||
@@ -168,29 +167,8 @@ export async function sendApprovalEmail(toEmail, studentName, username, password
       JSON.stringify(err) ||
       "Unknown EmailJS error";
 
-    console.error("❌ EmailJS send failed:", err);
+    console.error("❌ EmailJS send failed. Full error:", err);
+    console.error("❌ Error message:", realMessage);
     return { ok: false, error: realMessage, detail: err };
   }
 }
-
-/*
-FIRESTORE SECURITY RULES (paste in Firebase console → Firestore → Rules):
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /applications/{docId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null;
-    }
-    match /students/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if request.auth != null;
-    }
-    match /settings/{docId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-  }
-}
-*/
