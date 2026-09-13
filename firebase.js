@@ -105,36 +105,71 @@ export function generateUsername(prefix = "PMA") {
 }
 
 // ============================================================
-// EMAILJS CONFIGURATION — Yeh ab bhar diya hai
+// EMAILJS — CONFIGURED
 // ============================================================
 export const EMAILJS_PUBLIC_KEY = "5lJnrq_hPXeobIy5K";
 export const EMAILJS_SERVICE_ID = "service_4v09ood";
 export const EMAILJS_TEMPLATE_ID = "t2ptc48";
 
+/**
+ * Send approval email with proper error handling.
+ * Returns { ok: true, response } on success
+ *         { ok: false, error: "reason", detail } on failure
+ */
 export async function sendApprovalEmail(toEmail, studentName, username, password) {
+  // Check 1: EmailJS library loaded
   if (typeof emailjs === "undefined") {
-    console.warn("EmailJS not loaded - skipping email");
-    return { skipped: true };
+    console.error("❌ EmailJS SDK not loaded. Add script tag in <head> of admin.html");
+    return { ok: false, error: "EmailJS SDK not loaded", detail: "Missing <script src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js'></script>" };
   }
-  if (EMAILJS_PUBLIC_KEY.startsWith("YOUR_")) {
-    console.warn("EmailJS keys not configured - skipping email. Credentials: ", { username, password });
-    return { skipped: true };
+
+  // Check 2: Keys configured
+  if (
+    EMAILJS_PUBLIC_KEY.startsWith("YOUR_") ||
+    EMAILJS_SERVICE_ID.startsWith("YOUR_") ||
+    EMAILJS_TEMPLATE_ID.startsWith("YOUR_")
+  ) {
+    console.error("❌ EmailJS keys not configured");
+    return { ok: false, error: "EmailJS keys not configured", detail: "Fill EMAILJS_* in firebase.js" };
+  }
+
+  // Check 3: Recipient email
+  if (!toEmail || !toEmail.includes("@")) {
+    console.error("❌ Invalid recipient email:", toEmail);
+    return { ok: false, error: "Invalid recipient email", detail: toEmail };
+  }
+
+  // Try init (safe — won't error if already initialized)
+  try {
+    if (typeof emailjs.init === "function") {
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    }
+  } catch (e) {
+    console.warn("emailjs.init warning:", e);
   }
 
   try {
     const response = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email: toEmail,
-      student_name: studentName,
+      student_name: studentName || "Student",
       username: username,
       password: password,
       login_url: window.location.origin + "/login.html",
       academy_name: "Presentation Master Academy"
     });
     console.log("✅ Email sent successfully:", response);
-    return response;
+    return { ok: true, response };
   } catch (err) {
-    console.error("❌ EmailJS error:", err);
-    throw err;
+    // EmailJS errors often come as { status, text }
+    const realMessage =
+      (err && (err.text || err.message)) ||
+      (typeof err === "string" ? err : null) ||
+      (err && err.status ? `EmailJS status ${err.status}` : null) ||
+      JSON.stringify(err) ||
+      "Unknown EmailJS error";
+
+    console.error("❌ EmailJS send failed:", err);
+    return { ok: false, error: realMessage, detail: err };
   }
 }
 
