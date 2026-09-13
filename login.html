@@ -65,44 +65,6 @@
     </div>
 </section>
 
-<footer>
-    <div class="footer-container">
-        <div class="footer-section">
-            <h3>Contact Information</h3>
-            <div class="contact-info">
-                <p><i class="fas fa-map-marker-alt"></i> Presentation Master Academy, Nawabshah</p>
-                <p><i class="fas fa-phone"></i> 03234296569</p>
-                <p><i class="fas fa-envelope"></i> info@presentationmasteracademy.edu.pk</p>
-            </div>
-        </div>
-        <div class="footer-section">
-            <h3>Quick Links</h3>
-            <ul style="list-style: none; padding: 0;">
-                <li style="margin-bottom: 0.5rem;"><a href="./index.html" style="color: #ddd; text-decoration: none;">Home</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="./index.html#about" style="color: #ddd; text-decoration: none;">About</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="./index.html#principal" style="color: #ddd; text-decoration: none;">Founder</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="./index.html#programs" style="color: #ddd; text-decoration: none;">Programs</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="./workshop.html" style="color: #ddd; text-decoration: none;">Workshop</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="./register.html" style="color: #ddd; text-decoration: none;">Apply Now</a></li>
-                <li style="margin-bottom: 0.5rem;"><a href="./login.html" style="color: #ddd; text-decoration: none;">Student Login</a></li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="development-team">
-        <h3>Website Development Team</h3>
-        <p>Hadiqa Chandio, Iram Channa, Moomal Chang, Sana Channar, Dua Burrio</p>
-    </div>
-
-    <div class="copyright">
-        <p>&copy; 2026 Presentation Master Academy. All rights reserved.</p>
-    </div>
-</footer>
-    <div class="copyright">
-        <p>&copy; 2026 Presentation Master Academy. All rights reserved.</p>
-    </div>
-</footer>
-
 <script src="./nav.js"></script>
 
 <script type="module">
@@ -111,7 +73,6 @@
         doc, getDoc
     } from "./firebase.js";
 
-    // Local helper (register.html uses firebase.js setMessage, same here)
     function showMessage(target, text, type = "ok") {
         const node = typeof target === "string" ? document.querySelector(target) : target;
         if (!node) return;
@@ -128,7 +89,6 @@
         const username = document.getElementById("username").value.trim();
         const password = document.getElementById("password").value;
 
-        // Basic validation
         if (!username || !password) {
             showMessage("#loginMessage", "❌ Please enter both username and password.", "error");
             return;
@@ -140,12 +100,10 @@
         showMessage("#loginMessage", "", "");
 
         try {
-            // Accept either a username (PMA-...) or a full email
             const email = username.includes("@") ? username : usernameToEmail(username);
 
             const cred = await signInWithEmailAndPassword(auth, email, password);
 
-            // Verify student record exists in Firestore
             const snap = await getDoc(doc(db, "students", cred.user.uid));
             if (!snap.exists()) {
                 throw new Error("Student record not found. Contact admin at 03234296569.");
