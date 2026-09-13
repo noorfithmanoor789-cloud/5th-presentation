@@ -61,7 +61,7 @@ export const ACADEMY_PHONE = "03234296569";
 export const WHATSAPP_PHONE = "923234296569";
 export const EXAM_PORTAL_URL = "https://presentation-master-academy.vercel.app/";
 export const USERNAME_DOMAIN = "pma.local";
-export const ADMIN_PASSWORD = "PMA-ADMIN-2026";
+export const ADMIN_PASSWORD = "PMA-ADMIN-2026"; // change in production
 
 export function usernameToEmail(username) {
   return `${String(username).trim().toLowerCase()}@${USERNAME_DOMAIN}`;
@@ -109,7 +109,7 @@ export function generateUsername(prefix = "PMA") {
 // ============================================================
 export const EMAILJS_PUBLIC_KEY = "5lJnrq_hPXeobIy5K";
 export const EMAILJS_SERVICE_ID = "service_4v09ood";
-export const EMAILJS_TEMPLATE_ID = "export const EMAILJS_TEMPLATE_ID = "template_5sgn4mr";
+export const EMAILJS_TEMPLATE_ID = "template_5sgn4mr";
 
 export async function sendApprovalEmail(toEmail, studentName, username, password) {
   // Check 1: EmailJS library loaded
@@ -172,3 +172,25 @@ export async function sendApprovalEmail(toEmail, studentName, username, password
     return { ok: false, error: realMessage, detail: err };
   }
 }
+
+/*
+FIRESTORE SECURITY RULES (paste in Firebase console → Firestore → Rules):
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /applications/{docId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+    match /students/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null;
+    }
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+*/
