@@ -104,9 +104,12 @@ export function generateUsername(prefix = "PMA") {
   return `${prefix}-${year}-${suffix}`;
 }
 
-export const EMAILJS_PUBLIC_KEY = "YOUR_EMAILJS_PUBLIC_KEY";
-export const EMAILJS_SERVICE_ID = "YOUR_EMAILJS_SERVICE_ID";
-export const EMAILJS_TEMPLATE_ID = "YOUR_EMAILJS_TEMPLATE_ID";
+// ============================================================
+// EMAILJS CONFIGURATION — Yeh ab bhar diya hai
+// ============================================================
+export const EMAILJS_PUBLIC_KEY = "5lJnrq_hPXeobIy5K";
+export const EMAILJS_SERVICE_ID = "service_4v09ood";
+export const EMAILJS_TEMPLATE_ID = "t2ptc48";
 
 export async function sendApprovalEmail(toEmail, studentName, username, password) {
   if (typeof emailjs === "undefined") {
@@ -117,14 +120,22 @@ export async function sendApprovalEmail(toEmail, studentName, username, password
     console.warn("EmailJS keys not configured - skipping email. Credentials: ", { username, password });
     return { skipped: true };
   }
-  return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-    to_email: toEmail,
-    student_name: studentName,
-    username: username,
-    password: password,
-    login_url: window.location.origin + "/login.html",
-    academy_name: "Presentation Master Academy"
-  });
+
+  try {
+    const response = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: toEmail,
+      student_name: studentName,
+      username: username,
+      password: password,
+      login_url: window.location.origin + "/login.html",
+      academy_name: "Presentation Master Academy"
+    });
+    console.log("✅ Email sent successfully:", response);
+    return response;
+  } catch (err) {
+    console.error("❌ EmailJS error:", err);
+    throw err;
+  }
 }
 
 /*
