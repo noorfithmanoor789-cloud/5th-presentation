@@ -109,7 +109,7 @@ export function generateUsername(prefix = "PMA") {
 // ============================================================
 export const EMAILJS_PUBLIC_KEY = "5lJnrq_hPXeobIy5K";
 export const EMAILJS_SERVICE_ID = "service_4v09ood";
-export const EMAILJS_TEMPLATE_ID = "t2ptc48";
+export const EMAILJS_TEMPLATE_ID = "export const EMAILJS_TEMPLATE_ID = "template_5sgn4mr";
 
 export async function sendApprovalEmail(toEmail, studentName, username, password) {
   // Check 1: EmailJS library loaded
