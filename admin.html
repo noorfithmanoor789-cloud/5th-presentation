@@ -7,12 +7,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <style>
+        .form-container, .fade-in, .zoom-in { opacity: 1 !important; transform: none !important; }
+    </style>
 </head>
 <body>
 <header>
     <div class="header-container">
         <div class="logo-container">
-            <img src="./logo.jpg" alt="Presentation Master Academy" class="logo-img">
+            <img src="./logo.jpg" alt="Presentation Master Academy" class="logo-img" onerror="this.style.display='none'">
             <div class="logo-text">
                 <h1>PRESENTATION MASTER ACADEMY</h1>
                 <p>Admin Dashboard</p>
@@ -38,7 +41,7 @@
 <section id="adminPanel" style="display:none;">
     <div class="section-container">
         <div class="section-title">
-            <h2 class="fade-in">Pending Applications</h2>
+            <h2>Pending Applications</h2>
             <p style="color:#555; margin-top:1rem;">Review and approve student applications. Approved students automatically receive login credentials via email.</p>
         </div>
 
@@ -73,22 +76,6 @@
     </div>
 </section>
 
-<footer>
-    <div class="footer-container">
-        <div class="footer-section">
-            <h3 class="fade-in">Contact Information</h3>
-            <div class="contact-info">
-                <p class="fade-in2"><i class="fas fa-map-marker-alt"></i> Presentation Master Academy, Nawabshah</p>
-                <p class="fade-in2"><i class="fas fa-phone"></i> 03234296569</p>
-                <p class="fade-in2"><i class="fas fa-envelope"></i> info@presentationmasteracademy.edu.pk</p>
-            </div>
-        </div>
-    </div>
-    <div class="copyright">
-        <p>&copy; 2026 Presentation Master Academy. All rights reserved.</p>
-    </div>
-</footer>
-
 <script src="./nav.js"></script>
 
 <script type="module">
@@ -99,8 +86,16 @@
         sendApprovalEmail, ADMIN_PASSWORD, EMAILJS_PUBLIC_KEY, formatDate
     } from "./firebase.js";
 
+    // Init EmailJS
     if (typeof emailjs !== "undefined" && !EMAILJS_PUBLIC_KEY.startsWith("YOUR_")) {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
+        try {
+            emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+            console.log("✅ EmailJS initialized with public key");
+        } catch (e) {
+            console.error("❌ EmailJS init failed:", e);
+        }
+    } else {
+        console.error("❌ EmailJS SDK not loaded or key missing");
     }
 
     const gate = document.getElementById("gate");
@@ -224,13 +219,22 @@
                 approvedAt: serverTimestamp()
             });
 
-            let emailStatus = "sent";
+            // Send email with detailed logging
+            let emailStatus = "not attempted";
+            console.log("📧 Starting email send for:", appData.email);
+
             try {
-                const res = await sendApprovalEmail(appData.email, appData.fullName, username, password);
-                if (res && res.skipped) emailStatus = "skipped (EmailJS not configured)";
+                const result = await sendApprovalEmail(appData.email, appData.fullName, username, password);
+                if (result.ok) {
+                    emailStatus = "✅ sent";
+                    console.log("✅ Email confirmed sent:", result.response);
+                } else {
+                    emailStatus = "❌ " + result.error;
+                    console.error("❌ Email failed:", result.error);
+                }
             } catch (emailErr) {
-                console.warn("Email send failed:", emailErr);
-                emailStatus = "failed: " + emailErr.message;
+                console.error("❌ Email exception:", emailErr);
+                emailStatus = "❌ exception: " + (emailErr.message || "unknown");
             }
 
             setMessage(adminMessage,
@@ -239,7 +243,7 @@
             loadApplications();
         } catch (err) {
             console.error(err);
-            setMessage(adminMessage, "❌ Approval error: " + err.message, "error");
+            setMessage(adminMessage, "❌ Approval error: " + (err.message || err), "error");
         }
     }
 
