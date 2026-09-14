@@ -9,6 +9,77 @@
     <style>
         /* Emergency fallback — guarantees page is visible even if styles.css fails */
         .form-container, .fade-in, .zoom-in { opacity: 1 !important; transform: none !important; }
+
+        /* Payment box styles */
+        .payment-box {
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe9d1 100%);
+            border-left: 5px solid #e74c3c;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .payment-box h3 {
+            color: #c0392b;
+            margin-bottom: 0.8rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .payment-box .jazz-number {
+            background: white;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1a5276;
+            display: inline-block;
+            margin: 0.6rem 0;
+            letter-spacing: 1px;
+            border: 2px dashed #e74c3c;
+        }
+        .payment-box ol {
+            margin: 0.6rem 0 0.8rem 1.2rem;
+            color: #333;
+            font-size: 0.98rem;
+            line-height: 1.7;
+        }
+        .payment-box ol li {
+            margin-bottom: 0.3rem;
+        }
+        .payment-box .amount-highlight {
+            color: #e74c3c;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .payment-box .note {
+            font-size: 0.9rem;
+            color: #555;
+            font-style: italic;
+            margin-top: 0.6rem;
+            display: block;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 2rem 0 1.5rem;
+            color: #999;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #ddd;
+        }
+        .divider span {
+            padding: 0 1rem;
+        }
     </style>
 </head>
 <body>
@@ -37,6 +108,7 @@
 
         <div class="form-container">
             <form id="applicationForm" novalidate>
+                <!-- Personal Details -->
                 <div class="form-group">
                     <label for="fullName">Full Name *</label>
                     <input type="text" id="fullName" name="fullName" required placeholder="Enter your full name">
@@ -92,7 +164,60 @@
                     <textarea id="notes" name="notes" rows="3" placeholder="Anything we should know?"></textarea>
                 </div>
 
-                <button type="submit" class="cta-button" id="submitBtn" style="width:100%; border:none; cursor:pointer;">
+                <!-- Divider -->
+                <div class="divider"><span>PAYMENT DETAILS</span></div>
+
+                <!-- Payment Instructions -->
+                <div class="payment-box">
+                    <h3><i class="fas fa-money-bill-wave"></i> JazzCash Payment — Rs. 200 (Test Fee)</h3>
+
+                    <p>Please send the test fee via <strong>JazzCash</strong> before submitting the form:</p>
+
+                    <ol>
+                        <li>Open your <strong>JazzCash</strong> app or dial <strong>*786#</strong></li>
+                        <li>Select <strong>Money Transfer → JazzCash Account</strong></li>
+                        <li>Enter the number below and the amount <span class="amount-highlight">Rs. 200</span></li>
+                        <li>Complete the transfer and <strong>note the Transaction ID (TID)</strong></li>
+                        <li>Enter the Transaction ID in the field below</li>
+                    </ol>
+
+                    <p style="margin: 0.4rem 0; font-weight: 600; color: #333;">Send payment to:</p>
+                    <div class="jazz-number">
+                        <i class="fas fa-mobile-alt"></i> 0323-4296569
+                    </div>
+
+                    <p style="margin: 0.4rem 0; font-weight: 600; color: #333;">
+                        Amount: <span class="amount-highlight">Rs. 200 (Test Fee)</span>
+                    </p>
+
+                    <span class="note">
+                        <i class="fas fa-info-circle"></i>
+                        Your application will be approved only after the payment is verified by the admin.
+                    </span>
+                </div>
+
+                <!-- Payment Fields -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="paymentMethod">Payment Method *</label>
+                        <select id="paymentMethod" name="paymentMethod" required>
+                            <option value="JazzCash" selected>JazzCash</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="transactionId">JazzCash Transaction ID (TID) *</label>
+                        <input type="text" id="transactionId" name="transactionId" required placeholder="e.g. 1234567890">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentAmount">Amount Paid (PKR) *</label>
+                    <input type="text" id="paymentAmount" name="paymentAmount" value="200" required readonly
+                           style="background:#f4f4f4; font-weight:700; color:#1a5276;">
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="cta-button" id="submitBtn" style="width:100%; border:none; cursor:pointer; margin-top: 1rem;">
                     Submit Application
                 </button>
 
@@ -127,6 +252,10 @@
             city: document.getElementById("city").value.trim(),
             program: document.getElementById("program").value,
             preferredDate: document.getElementById("preferredDate").value || null,
+            paymentMethod: document.getElementById("paymentMethod").value,
+            transactionId: document.getElementById("transactionId").value.trim(),
+            paymentAmount: document.getElementById("paymentAmount").value.trim(),
+            paymentStatus: "pending-verification",
             notes: document.getElementById("notes").value.trim(),
             status: "pending",
             createdAt: serverTimestamp(),
@@ -141,6 +270,10 @@
             setMessage("#formMessage", "❌ Please enter a valid email address.", "error");
             return;
         }
+        if (!data.transactionId) {
+            setMessage("#formMessage", "❌ Please enter your JazzCash Transaction ID.", "error");
+            return;
+        }
 
         btn.disabled = true;
         const originalText = btn.textContent;
@@ -149,9 +282,10 @@
         try {
             await addDoc(collection(db, "applications"), data);
             setMessage("#formMessage",
-                "✅ Application submitted successfully! Await admin approval. You will receive credentials by email.",
+                "✅ Application submitted successfully! Await admin approval. You will receive credentials by email after payment verification.",
                 "ok");
             form.reset();
+            document.getElementById("paymentAmount").value = "200";
         } catch (err) {
             console.error("Firestore error:", err);
             setMessage("#formMessage",
